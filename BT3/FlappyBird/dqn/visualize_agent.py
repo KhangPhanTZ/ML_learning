@@ -12,9 +12,12 @@ sibling `Flappy-bird-python/assets/` sprite folder) and run:
 
     python visualize_agent.py
     python visualize_agent.py /path/to/best_dqn_model.pth   # custom path
+    python visualize_agent.py --max-pipes 80                # force reset after 80 pipes
+    python visualize_agent.py --episodes 10 --max-pipes 60  # 10 different maps then quit
 
-Press ESC or close the window to quit. The script loops episodes forever
-so you can capture as many frames as you need.
+Each episode is reseeded so the pipe layout differs from run to run,
+making it easy to visualise the agent generalising across many "maps".
+Press SPACE to skip to the next map, ESC / close window to quit.
 """
 
 from __future__ import annotations
@@ -214,8 +217,36 @@ def load_sprites():
 # =====================================================================
 # Main loop
 # =====================================================================
+def parse_args(argv: list[str]) -> tuple[Path, int, int, int]:
+    """Tiny ad-hoc parser so the script stays dependency-free.
+
+    Returns (model_path, max_pipes, n_episodes, base_seed).
+    max_pipes <= 0 means "no cap" (run until the bird crashes).
+    n_episodes <= 0 means "loop forever".
+    """
+    model_path = DEFAULT_MODEL_PATH
+    max_pipes = 60
+    n_episodes = 0
+    base_seed = 2000
+
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a == "--max-pipes" and i + 1 < len(argv):
+            max_pipes = int(argv[i + 1]); i += 2
+        elif a == "--episodes" and i + 1 < len(argv):
+            n_episodes = int(argv[i + 1]); i += 2
+        elif a == "--seed" and i + 1 < len(argv):
+            base_seed = int(argv[i + 1]); i += 2
+        elif a in ("-h", "--help"):
+            print(__doc__); sys.exit(0)
+        else:
+            model_path = Path(a); i += 1
+    return model_path, max_pipes, n_episodes, base_seed
+
+
 def main():
-    model_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_MODEL_PATH
+    model_path, max_pipes, n_episodes, base_seed = parse_args(sys.argv)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     pygame.init()
@@ -232,16 +263,22 @@ def main():
     if device.type == "cuda":
         print(f"[viz] gpu      = {torch.cuda.get_device_name(0)}")
     print(f"[viz] model    = {model_path}")
-    print(f"[viz] running at {FPS} FPS - press ESC or close window to quit\n")
+    cap_str = f"cap={max_pipes} pipes" if max_pipes > 0 else "no cap"
+    ep_str = f"{n_episodes} episodes" if n_episodes > 0 else "infinite episodes"
+    print(f"[viz] running  = {ep_str}, {cap_str}, base_seed={base_seed}, {FPS} FPS")
+    print(f"[viz] keys     = SPACE: skip map  |  ESC: quit\n")
 
     episode = 0
     best_score = 0
 
     try:
-        while True:
+        while n_episodes <= 0 or episode < n_episodes:
             episode += 1
 
-            # ----- reset episode -----
+            # ----- reset episode with a fresh, distinct pipe layout -----
+            ep_seed = base_seed + episode
+            random.seed(ep_seed)
+
             bird_y = SCREEN_HEIGHT / 2.0
             bird_vy = 0.0
             score = 0
@@ -254,6 +291,7 @@ def main():
             running = True
             last_action = 0
             last_q = (0.0, 0.0)
+            end_reason = "crash"
 
             while running:
                 # ----- input handling -----
@@ -262,6 +300,9 @@ def main():
                         return
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                         return
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        running = False
+                        end_reason = "skipped"
 
                 # ----- 1. extract state from the current Pygame world -----
                 state = extract_state(bird_y, pipes)
@@ -296,9 +337,12 @@ def main():
                         p.passed = True
                         score += 1
 
-                # ----- 7. crash check -----
+                # ----- 7. crash check (or pipe cap reached) -----
                 if check_collision(bird_y, pipes):
                     running = False
+                elif max_pipes > 0 and score >= max_pipes:
+                    running = False
+                    end_reason = "cap"
 
                 # ----- 8. render -----
                 screen.blit(sprites["bg"], (0, 0))
@@ -313,7 +357,7 @@ def main():
                 np_pipe = next_pipe_ahead(pipes)
                 act_str = "FLAP" if last_action == 1 else "NOOP"
                 hud_lines = [
-                    f"Episode {episode}  Pipes {score}  Best {best_score}",
+                    f"Map #{episode}  seed={ep_seed}  Pipes {score}  Best {best_score}",
                     f"bird_y     = {bird_y:6.1f}",
                     f"top_pipe_y = {np_pipe.top_pipe_bottom_y:6.1f}",
                     f"bot_pipe_y = {np_pipe.bottom_pipe_top_y:6.1f}",
@@ -333,11 +377,22 @@ def main():
             # ----- end of episode -----
             if score > best_score:
                 best_score = score
-            print(f"[ep {episode:4d}] pipes = {score:4d}   frames = {frames:5d}   best = {best_score}")
+            tag = {"crash": "CRASH", "cap": "PASSED", "skipped": "SKIPPED"}[end_reason]
+            print(
+                f"[map {episode:4d}] seed={ep_seed}  pipes={score:4d}  frames={frames:5d}  "
+                f"{tag}  best={best_score}",
+                flush=True,
+            )
 
-            # Brief "GAME OVER" pause so the score is readable in the recording.
-            overlay = big_font.render(f"GAME OVER  -  {score} pipes", True, (255, 80, 80))
-            shadow = big_font.render(f"GAME OVER  -  {score} pipes", True, (0, 0, 0))
+            # Brief overlay so the result is readable in the recording.
+            banner_text = (
+                f"PASSED {score} pipes" if end_reason == "cap"
+                else (f"SKIPPED ({score} pipes)" if end_reason == "skipped"
+                      else f"GAME OVER  -  {score} pipes")
+            )
+            banner_color = (80, 220, 80) if end_reason == "cap" else (255, 80, 80)
+            overlay = big_font.render(banner_text, True, banner_color)
+            shadow = big_font.render(banner_text, True, (0, 0, 0))
             ox = SCREEN_WIDTH // 2 - overlay.get_width() // 2
             oy = SCREEN_HEIGHT // 2 - overlay.get_height() // 2
             screen.blit(shadow, (ox + 2, oy + 2))

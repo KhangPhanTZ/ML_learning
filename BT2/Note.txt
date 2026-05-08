@@ -1,0 +1,11 @@
+Trong báo cáo trình bày các mục:
+
+1. Đọc dữ liệu CSV (semi_supervised_data.csv). Thực hiện bài toàn gán nhãn tự động cho 3 class ứng dụng mô hình RBF và kỹ thuật clustering.
+	a. Gán nhãn lại toàn bộ dữ liệu sau khi clustering.
+	b. Giữ nguyên các class gốc, chỉ gán nhãn cho các dữ liệu chưa có nhãn
+
+Yêu cầu phải hoàn thành toàn bộ nội dung, mô hình chỉ sử dụng RBF.
+Mô tả chương trình không rõ ràng sẽ không có điểm.
+Báo cáo copy bài bạn khác, kịch bản AI hoặc AI đọc sẽ được -5 Điểm. 
+Sử dụng GA/PSO để huấn luyện được +5Đ.
+

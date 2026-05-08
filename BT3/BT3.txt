@@ -1,0 +1,16 @@
+BT3
+Viết chương trình huấn luyện AI chơi game Flappy Bird bằng giải thuật GA/PSO.
+Tham khảo nguồn game flappy bird: https://github.com/LeonMarqs/Flappy-bird-python
+
+1. Sử dụng mô hình mạng nơ ron trong việc điều khiển hành động của chim, bắt buộc ứng dụng thị giác máy tính làm đầu vào của mạng, có thể sử dụng duy nhất vị trí chim ở đầu vào. 
+2. Mô tả chỉ tiết đầu vào và đầu ra, cấu trúc mạng.
+3. Mô tả hàm mục tiêu có thể điều khiển hành vi của chim như thế nào?
+4. Kết quả (thời gian huấn luyện, chạy kết quả tốt nhất ...)
+5. Nhận xét kết quả
+
+Yêu cầu trong video phải thể hiện kết quả 1 từ load mô hình tốt nhất, mô tả ngõ vào, ngõ ra, vượt qua ít nhất 50 ống.
+Mô tả đầy đủ từ ngõ vào, lớp ẩn đến ngõ ra của mô hình NN. 
+
+Mô tả không rõ ràng sẽ không có điểm.
+
+Trình bày sử dụng kịch bản AI hoặc AI đọc sẽ được -5 điểm.

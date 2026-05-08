@@ -1,0 +1,19 @@
+Dự báo lưu lượng, áp xuất thời gian linh hoạt tối đa 3 tháng đầu năm 2024;
+
+Trong báo cáo trình bày các mục:
+
+1. Đọc dữ liệu CSV (F98420_2023csv). Lựa chọn dữ liệu train/test, trực quan hóa dữ liệu để phân tích, nhận xét về dữ liệu.
+
+2. lựa chọn mạng NN để thực hiện bài toán dự báo. Mô tả đầu vào, lý do lựa chọn cấu hình từng lớp.
+
+3. Lựa chọn hàm mục tiêu để dự báo (lưu lượng, áp suất) cho năm 2024, nêu lý do chọn hàm mục tiêu. Thực hiện việc huấn luyện 10 lần, nhận xét kết quả 10 lần huấn luyện đó.
+
+4. Lấy kết quả tốt nhất, so sánh với kết quả năm 2024 thực tế. Nhận xét sai số theo tiêu chí MSE. 
+
+5. Kết luận
+
+Mô tả không rõ ràng sẽ không có điểm.
+Yêu cầu kết quả ít nhất phải đúng dạng. Báo cáo copy bài bạn khác, kịch bản AI hoặc AI đọc sẽ được -5 Điểm. 
+Sử dụng GA/PSO để huấn luyện mạng được +5Đ.
+
+
